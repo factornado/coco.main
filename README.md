@@ -22,8 +22,8 @@ You need to be on a unix-like system (to take advantage of bash scripts), and to
 
 To create your first project, you need to clone the repository:
 
-    git clone https://github.com/bibmartin/supernado
-    cd supernado
+    git clone https://github.com/bibmartin/coco.main
+    cd coco.mail
 
 Now create the conda *virtual* environment for supervisor:
 
