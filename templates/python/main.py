@@ -1,36 +1,59 @@
 import yaml
-from tornado import ioloop, web, httpserver
+import os
+import time
+from tornado import ioloop, web, httpserver, httpclient
+import logging
 
-conf = yaml.load(open('config.yml'))
+from utils import Config
 
-service_name = 'main'
+config = Config('config.yml')
+
+logging.basicConfig(
+    level=10,
+    filename=config.conf['log']['file'],
+    format='%(asctime)s (%(filename)s:%(lineno)s)- %(levelname)s - %(message)s',
+    )
+logging.Formatter.converter = time.gmtime
+logging.getLogger('tornado').setLevel(logging.WARNING)
+logging.info('='*80)
+
+class Info(web.RequestHandler):
+    def get(self):
+        self.write(config.conf)
 
 
-def get_open_port():
-    import socket
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("", 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
-
+class Heartbeat(web.RequestHandler):
+    def get(self):
+        config.register()
+        self.write("ok")
 
 class SomeHandler(web.RequestHandler):
     def get(self, param=''):
         self.write(
             "Hello from service {}. "
             "You've asked for uri {}\n".format(
-                conf['name'], param))
+                config.conf['name'], param))
 
 app = web.Application([
+    ("/(swagger.json)", web.StaticFileHandler, {'path': os.path.dirname(__file__)}),
+    ("/heartbeat", Heartbeat),
+    ("/info", Info),
     ("/(.*)", SomeHandler),
     ])
 
-# port = get_open_port()  # Use this to get a random port.
-port = 8001
-print('Listening on port', port)
-
-server = httpserver.HTTPServer(app)
-server.bind(port, address='0.0.0.0')
-server.start(conf['threads_nb'])
-ioloop.IOLoop.current().start()
+if __name__ == '__main__':
+    port = config.get_port()  # We need to have a fixed port in both forks.
+    logging.info('Listening on port {}'.format(port))
+    time.sleep(2)  # We sleep for a few seconds to let the registry start.
+    # config.register()
+    if os.fork():
+        config.register()
+        # print('Listening on port', port)
+        server = httpserver.HTTPServer(app)
+        server.bind(config.get_port(), address='0.0.0.0')
+        server.start(config.conf['threads_nb'])
+        ioloop.IOLoop.current().start()
+    else:
+        ioloop.PeriodicCallback(config.heartbeat,
+                                config.conf['heartbeat']['period']).start()
+        ioloop.IOLoop.instance().start()

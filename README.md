@@ -32,6 +32,8 @@ Now create the conda *virtual* environment for supervisor:
 Create and install your first service:
 
     cp -R templates/python ./services/myservice
+    sed -i 's/COCO_SERVICE_NAME/myservice/g' ./services/myservice/*
+    sed -i 's/COCO_SERVICE_VERSION/v1/g' ./services/myservice/*
     ./services/myservice/make.sh
 
 Run supervisor and your service:
@@ -42,10 +44,18 @@ Run supervisor and your service:
 
 Your server should be running ; in typing `supervisorctl status`, you should get something like:
 
-    > template_python                  RUNNING   pid 13135, uptime 0:00:07
+    > myservice-v1                  RUNNING   pid 13135, uptime 0:00:07
 
-You can test your service with:
+You can figure out on which port your service is listening:
 
-    curl http://localhost:8001/foo/bar
+    cat /tmp/myservice.log
 
-    > Hello from service template_python. You've asked for uri foo/bar
+    > 2017-02-09 11:31:24,498 (main.py:18)- INFO - ========================================
+    > 2017-02-09 11:31:24,499 (main.py:46)- INFO - Listening on port 56139
+    > ...
+
+So you can test your service with:
+
+    curl http://localhost:56139/foo/bar
+
+    > Hello from service myservice. You've asked for uri foo/bar

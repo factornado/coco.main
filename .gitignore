@@ -1,3 +1,4 @@
 services/*
 supervisord.log
 supervisord.pid
+templates/python/supervisord.conf
