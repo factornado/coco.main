@@ -38,32 +38,3 @@ class Config(object):
             self.conf['port'] = s.getsockname()[1]
             s.close()
         return self.conf['port']
-
-    def heartbeat(self):
-        request = httpclient.HTTPRequest(
-            'http://localhost:{}/heartbeat'.format(self.get_port()),
-            method='GET',
-            )
-        client = httpclient.HTTPClient()
-        r = client.fetch(request, raise_error=False)
-        logging.info('{} HEARTBEAT ({}).'.format(
-                r.code, r.reason[:30]))
-
-    def register(self):
-        request = httpclient.HTTPRequest(
-            '{}/register/{}/{}'.format(
-                self.conf['heartbeat']['url'].rstrip('/'),
-                self.conf['name'],
-                self.conf['version'],
-                ),
-            method='POST',
-            body=json.dumps({
-                'url': 'http://{}:{}'.format(socket.gethostname(),
-                                             self.get_port()),
-                'config': self.conf,
-                }),
-            )
-        client = httpclient.HTTPClient()
-        r = client.fetch(request, raise_error=False)
-        logging.info('{} REGISTER ({}).'.format(
-                r.code, r.reason[:30]))
